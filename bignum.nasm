@@ -144,6 +144,7 @@ tosub:
     mov     cl, byte [edi]
     sub     bl, cl
     sub     bl, al
+    mov     al, 0
     cmp     bl, 0
     jge     .store
     mov     al, 1

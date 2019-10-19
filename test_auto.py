@@ -1,11 +1,11 @@
 from os import *
 from random import *
 
-n = 10
+n = 10000
 p = 0
 t = 0
 
-system('nasm -f elf32 bignum.asm -o bignum.o && ld -m elf_i386 bignum.o -o bignum')
+system('nasm -f elf32 bignum.nasm -o bignum.o && ld -m elf_i386 bignum.o -o bignum')
 
 for r in [2E2, 1E20]:
   for i in range(n):
@@ -13,9 +13,7 @@ for r in [2E2, 1E20]:
     m = 0
     t += 1
     try:
-      o = popen('echo "%d %d\\n" > test && ./bignum < test && rm test' % (a, b)).read().split()
-      print(o)
-      print(a,b)
+      o = popen('echo "%d %d\n" > test && ./bignum < test && rm test' % (a, b)).read().split()
       assert int(o[-2]) == a + b and int(o[-1]) == a * b
       p += 1
     except:
