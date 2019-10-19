@@ -1,4 +1,3 @@
-%include        'func.nasm'
 
 SECTION .data
 msg1   db    'Please enter x and y: ', 0Ah      ; message string asking user for input
@@ -22,10 +21,10 @@ global  _start
 _start:
     mov     eax, msg1
     call    sprint
-    mov     edx, 255        ; number of bytes to read
-    mov     ecx, input      ; reserved space to store our input (known as a buffer)
-    mov     ebx, 0          ; write to the STDIN file
-    mov     eax, 3          ; invoke SYS_READ (kernel opcode 3)
+    mov     edx, 255        
+    mov     ecx, input      
+    mov     ebx, 0          
+    mov     eax, 3          
     int     80h
     mov     eax, 0
     push    eax
@@ -103,13 +102,14 @@ add:
     inc     edx
     mov     bl, 0
     inc     ch
-    cmp     ch, 3
+    cmp     ch, 49
     jg      .finished
     mov     bl, byte [esi]
     mov     cl, byte [edi]
     add     bl, al
     add     bl, cl
     mov     eax, ebx
+    push    ebx
     mov     ebx, 10
     push    edx
     mov     edx, 0
@@ -118,8 +118,10 @@ add:
     pop     edx
     mov     byte [edx], al
     mov     al, 0
+    pop     ebx
+
     cmp     bl, 9
-    jl      .addloop
+    jle     .addloop
     mov     al, 1
     jmp     .addloop
 .finished:
@@ -186,11 +188,12 @@ tomul:
     mov     ebx, 0
     mov     ecx, 0
 .mulloop:
-    cmp     ch, 49
+    cmp     ch, 20
     jge     .finish
-    cmp     cl, 49
+    cmp     cl, 20
     jl     .mul
     inc     ch
+    mov     cl, 0
 .mul:
     push    edx
     push    ecx
@@ -226,22 +229,131 @@ strcpy:
     pusha
     mov     eax, 0
 .cpyloop:
-    cmp     eax, 50
+    cmp     eax, 49
     je      .cpyfinish
     mov     bl, byte[esi+eax]
     mov     byte[edi+eax], bl
     mov     byte[esi+eax], 0
+    mov     byte[mul1+eax+1], 0
     inc     eax
     jmp     .cpyloop
 .cpyfinish:
     popa
     ret
+format:
+    pusha
+    mov     eax, 1
+    mov     ecx, 0
+    inc     esi
+.pushloop:
+    cmp     eax, ebx
+    je      .popjudge
+    mov     cl, byte[esi+eax-1]
+    push    ecx
+    inc     eax
+    jmp     .pushloop
+.popjudge:
+    cmp     eax, 1
+    je      .pluszero
+    pop     ecx
+    dec     eax
+    cmp     ecx, 0
+    je      .popjudge
+    jmp     .poploop
+.poploop:
+    add     ecx, 48
+    mov     byte[esi], cl
+    dec     eax
+    cmp     eax, 0
+    je      .matfinish
+    pop     ecx
 
+    inc     esi
+    jmp     .poploop
+.pluszero:
+    mov     byte[esi],48
+.matfinish:
+    popa
+    ret
 
 return:
-    mov     al, byte [mul2]
+    mov     esi, stres
+    mov     ebx, 50
+    call    format
+    mov     eax, stres
+    cmp     byte[eax],43
+    jne     .snext
+    inc     eax
+.snext:
+    call    sprint
+    call    sprintLF
+    mov     esi, mul2
+    mov     ebx, 100
+    call    format
+    mov     al, byte[str1]
+    add     al, byte[str2]
+    cmp     al, 88
+    jne      .print
+    mov     byte[mul2], 45
+.print:
+    mov     eax, mul2
+    cmp     byte[eax],43
+    jne     .pnext
+    inc     eax
+.pnext:
+    call    sprint
+    ;call    sprintLF
+    call    quit
+;---------------------------
+;工具函数
+slen:
+    push    ebx
+    mov     ebx, eax
+ 
+nextchar:
+    cmp     byte [eax], 0
+    jz      finished
+    inc     eax
+    jmp     nextchar
+ 
+finished:
+    sub     eax, ebx
+    pop     ebx
+    ret
+ 
+ 
+ ;------------------------------------------
+sprint:
+    push    edx
+    push    ecx
+    push    ebx
+    push    eax
+    call    slen
+    mov     edx, eax
+    mov     ecx, [esp]
+    mov     ebx, 1
+    mov     eax, 4
+    int     80h
+    pop     eax
+    pop     ebx
+    pop     ecx
+    pop     edx
+    ret
+ 
+ 
+
+sprintLF: 
+    push    eax
+    mov     eax, 0AH
     push    eax
     mov     eax, esp
     call    sprint
-    call    quit
-    
+    pop     eax
+    pop     eax
+    ret
+ 
+quit:
+    mov     ebx, 0
+    mov     eax, 1
+    int     80h
+    ret
